@@ -1,4 +1,5 @@
 # Edu-chatbot:  Summarize and Ask Questions
+### Building in progress. Please be patient
 Welcome to the School Chatbot project! This chatbot is designed to make the lives of students easier by allowing them to submit pictures of text and files related to their school work and receive summaries or ask questions about the content. Whether you need a quick summary of a textbook chapter or clarification on a complex assignment, our chatbot is here to help.
 
 
