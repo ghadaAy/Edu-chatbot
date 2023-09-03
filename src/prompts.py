@@ -15,3 +15,4 @@ If the context is insufficient to generate a response, please consider using the
 [##Question##]{question}[/##Question##]
 
 [##Context##]{context}[/##Context##]"""
+summarize_prompt = """Please provide a concise summary of the subject mentioned in the following question: '{question}.'"""
