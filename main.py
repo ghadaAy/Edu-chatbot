@@ -1,28 +1,28 @@
+import json
 from settings import get_settings
 from src.llms.openai import OpenAIManager
-from settings import get_settings
 from langchain.embeddings.openai import OpenAIEmbeddings
 from fastapi import File,UploadFile
-from PIL import Image,ImageFont, ImageDraw
+from PIL import Image, ImageDraw
 from io import BytesIO
 import uvicorn
 import aiofiles
-app_settings= get_settings()
-
-
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
-from PIL import Image
-from pdf2image import convert_from_path
-from io import BytesIO
+from src.schema import RequestLLM
+from fastapi.responses import StreamingResponse
 
+from src.prompts import summarize_prompt, openai_prompt_template
+app_settings= get_settings()
 app = FastAPI()
 
 
 embeddings = OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
+openai_summarizing = OpenAIManager(prompt=summarize_prompt)
+openai_qa = OpenAIManager(prompt=openai_prompt_template)
 
 @app.post("/index_image/")
-async def upload_file(image_file : UploadFile = File(None)):   
+async def upload_image(image_file : UploadFile = File(None)):   
     print(image_file.filename)
     out_image_name = image_file.filename
     out_image_path = f"{app_settings.temp_folder}/{out_image_name}"
@@ -42,14 +42,14 @@ async def upload_file(image_file : UploadFile = File(None)):
     return FileResponse(out_image_path, media_type="image/jpeg")
 
 @app.post("/index_file/")
-async def upload_file(image_file : UploadFile = File(None)):   
-    print(image_file.filename)
-    out_image_name = image_file.filename
+async def upload_file(file_ : UploadFile = File(None)):   
+    print(file_.filename)
+    out_image_name = file_.filename
     out_image_path = f"{app_settings.temp_folder}/{out_image_name}"
     
     
     async with aiofiles.open(out_image_path, 'wb') as out_file:
-        request_object_content = await image_file.read()
+        request_object_content = await file_.read()
         await out_file.write(request_object_content) 
 
     OpenAIManager.index_file_from_path(
@@ -59,6 +59,10 @@ async def upload_file(image_file : UploadFile = File(None)):
 
     return FileResponse(out_image_path, media_type="image/jpeg")
 
+@app.post("/summarize/")
+async def request_summary(request:RequestLLM):
+    return StreamingResponse(openai_qa.run_qa_chain(request.message))
+    
        
 if __name__=="__main__":
     uvicorn.run("main:app", port=8080, log_level="info", reload=True)

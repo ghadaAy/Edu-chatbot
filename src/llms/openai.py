@@ -1,5 +1,4 @@
 import os
-from langchain.vectorstores import FAISS, Milvus
 from langchain.prompts import PromptTemplate
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
@@ -10,11 +9,12 @@ from src import prompts as llms_prompts
 app_settings = get_settings()
 
 class OpenAIManager(LanguageModelManager):
-    def __init__(self):
+    def __init__(self, prompt:str):
         super().__init__(
+            
             language_model=self.load_openai_language_model(),
             embedding_function=self.load_openai_embeddings(),
-            qa_prompt=self.create_qa_prompt(),
+            qa_prompt=self.create_qa_prompt(prompt),
             human_prefix="Human",
             ai_prefix="AI",
             data_path="./data",
@@ -32,8 +32,8 @@ class OpenAIManager(LanguageModelManager):
     def load_openai_embeddings(self):
         return OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
 
-    def create_qa_prompt(self):
+    def create_qa_prompt(self, prompt:str):
         return PromptTemplate(
-            template=llms_prompts.openai_prompt_template,
+            template=prompt,
             input_variables=["context", "question"],
         )

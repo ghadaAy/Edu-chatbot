@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     PATH_TESSERACT:str
     class Config:
         env_file = '.env'
+        
 @lru_cache(1)
 def get_settings():
     """Function to get and cache settings.

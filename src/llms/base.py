@@ -67,7 +67,7 @@ class LanguageModelManager:
                 chain_type="stuff",
                 retriever=self.database.as_retriever(
                     search_type="similarity_score_threshold",
-                    search_kwargs={"score_threshold": 0.6, "k": 4},
+                    search_kwargs={"score_threshold": 0.7, "k": 4},
                 ),
                 chain_type_kwargs={
                     "prompt": self.qa_prompt,

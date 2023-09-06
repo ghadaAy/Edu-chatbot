@@ -1,0 +1,34 @@
+bs4
+unstructured
+openai 
+langchain 
+pydantic_settings
+tiktoken
+FAISS-cpu
+fastapi
+uvicorn
+aiofiles
+pypdf
+sentence-transformers
+pdf2image
+python-multipart
+# #git+https://github.com/huggingface/transformers.git
+# accelerate
+# sentencepiece
+# bitsandbytes
+# xformers
+# numpy==1.23
+# # aiofiles
+# python-multipart
+# openai
+# pycryptodome
+# tiktoken
+# InstructorEmbedding
+# pydantic==1.10.11
+# langchain==0.0.243
+# PyPDF2
+# kafka-python
+# pymilvus
+# azure-storage-file-datalake
+# aspose-words
+# gunicorn
