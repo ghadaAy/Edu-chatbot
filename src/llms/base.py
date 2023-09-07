@@ -62,23 +62,21 @@ class LanguageModelManager:
     def run_qa_chain(self, query):
         if self.database is None:
             self.load_database()
-            self.qa_chain = RetrievalQA.from_chain_type(
-                llm=self.language_model,
-                chain_type="stuff",
-                retriever=self.database.as_retriever(
-                    search_type="similarity_score_threshold",
-                    search_kwargs={"score_threshold": 0.7, "k": 4},
-                ),
-                chain_type_kwargs={
-                    "prompt": self.qa_prompt,
-                    # "memory": ConversationBufferWindowMemory(
-                    #     human_prefix=self.human_prefix, ai_prefix=self.ai_prefix, k=4
-                    # ),
-                },
-                return_source_documents=False,
-                verbose=True,
-            )
-        return self.qa_chain.run(query)
+        self.qa_chain = RetrievalQA.from_chain_type(
+            llm=self.language_model,
+            chain_type="stuff",
+            retriever=self.database.as_retriever(
+                search_type="similarity_score_threshold",
+                search_kwargs={"score_threshold": 0.7, "k": 4},
+            ),
+            chain_type_kwargs={
+                "prompt": self.qa_prompt,
+               
+            },
+            return_source_documents=False,
+            verbose=True,
+        )
+        yield self.qa_chain.run(query)
 
     def load_database(self):
         from langchain.vectorstores import FAISS

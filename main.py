@@ -2,7 +2,7 @@ import json
 from settings import get_settings
 from src.llms.openai import OpenAIManager
 from langchain.embeddings.openai import OpenAIEmbeddings
-from fastapi import File,UploadFile
+from fastapi import File, UploadFile
 from PIL import Image, ImageDraw
 from io import BytesIO
 import uvicorn
@@ -13,7 +13,8 @@ from src.schema import RequestLLM
 from fastapi.responses import StreamingResponse
 
 from src.prompts import summarize_prompt, openai_prompt_template
-app_settings= get_settings()
+
+app_settings = get_settings()
 app = FastAPI()
 
 
@@ -21,57 +22,62 @@ embeddings = OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # typ
 openai_summarizing = OpenAIManager(prompt=summarize_prompt)
 openai_qa = OpenAIManager(prompt=openai_prompt_template)
 
+
 @app.post("/index_image/")
-async def upload_image(image_file : UploadFile = File(None)):   
+async def upload_image(image_file: UploadFile = File(None)):
     print(image_file.filename)
     out_image_name = image_file.filename
     out_image_path = f"{app_settings.temp_folder}/{out_image_name}"
     request_object_content = await image_file.read()
-    photo = Image.open(BytesIO(request_object_content)) 
+    photo = Image.open(BytesIO(request_object_content))
     # make the image editable
     drawing = ImageDraw.Draw(photo)
-    black = (3)
+    black = 3
     # font = ImageFont.truetype("Pillow/Tests/fonts/FreeMono.ttf", 40)
-    drawing.text((0,0), 'text_to_water_mark', fill=black)#, font=font)
+    drawing.text((0, 0), "text_to_water_mark", fill=black)  # , font=font)
     photo.save(out_image_path)
     OpenAIManager.index_file_from_path(
-                                        file_path=out_image_path,
-                                        embedding_function=embeddings
-                                        )
+        file_path=out_image_path, embedding_function=embeddings
+    )
 
     return FileResponse(out_image_path, media_type="image/jpeg")
 
+
 @app.post("/index_file/")
-async def upload_file(file_ : UploadFile = File(None)):   
+async def upload_file(file_: UploadFile = File(None)):
     print(file_.filename)
     out_image_name = file_.filename
     out_image_path = f"{app_settings.temp_folder}/{out_image_name}"
-    
-    
-    async with aiofiles.open(out_image_path, 'wb') as out_file:
+
+    async with aiofiles.open(out_image_path, "wb") as out_file:
         request_object_content = await file_.read()
-        await out_file.write(request_object_content) 
+        await out_file.write(request_object_content)
 
     OpenAIManager.index_file_from_path(
-                                        file_path=out_image_path,
-                                        embedding_function=embeddings
-                                        )
+        file_path=out_image_path, embedding_function=embeddings
+    )
 
     return FileResponse(out_image_path, media_type="image/jpeg")
 
+
 @app.post("/summarize/")
-async def request_summary(request:RequestLLM):
-    return StreamingResponse(openai_qa.run_qa_chain(request.message))
-    
-       
-if __name__=="__main__":
+async def request_summary(request: RequestLLM):
+    return StreamingResponse(
+        openai_qa.run_qa_chain(request.message),
+        status_code=200,
+        media_type="text/event-stream",
+    )
+
+@app.post("/question_answering/")
+async def request_answer(request: RequestLLM):
+    return StreamingResponse(
+        openai_qa.run_qa_chain(request.message),
+        status_code=200,
+        media_type="text/event-stream",
+    )
+
+if __name__ == "__main__":
     uvicorn.run("main:app", port=8080, log_level="info", reload=True)
-
-
-
-
-
-
 
 
 # @app.post("/text/")
