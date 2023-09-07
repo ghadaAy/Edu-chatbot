@@ -11,8 +11,9 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
 from src.schema import RequestLLM
 from fastapi.responses import StreamingResponse
-
+import asyncio
 from src.prompts import summarize_prompt, openai_prompt_template
+from typing import Any, Optional, Awaitable, Callable, Union
 
 app_settings = get_settings()
 app = FastAPI()
@@ -21,6 +22,8 @@ app = FastAPI()
 embeddings = OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
 openai_summarizing = OpenAIManager(prompt=summarize_prompt)
 openai_qa = OpenAIManager(prompt=openai_prompt_template)
+
+
 
 
 @app.post("/index_image/")
@@ -61,17 +64,19 @@ async def upload_file(file_: UploadFile = File(None)):
 
 
 @app.post("/summarize/")
-async def request_summary(request: RequestLLM):
-    return StreamingResponse(
-        openai_qa.run_qa_chain(request.message),
+def request_summary(request: RequestLLM):
+    return  StreamingResponse(
+        openai_qa.answer(request.message),
         status_code=200,
         media_type="text/event-stream",
     )
 
 @app.post("/question_answering/")
 async def request_answer(request: RequestLLM):
+     # Begin a task that runs in the background.
+    
     return StreamingResponse(
-        openai_qa.run_qa_chain(request.message),
+        openai_summarizing.answer(request.message),
         status_code=200,
         media_type="text/event-stream",
     )

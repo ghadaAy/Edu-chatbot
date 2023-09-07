@@ -4,8 +4,11 @@ from langchain.chains import RetrievalQA
 from langchain.memory import ConversationBufferWindowMemory
 from src.loader.process_file import ProcessFile
 from settings import get_settings
+import asyncio
+from typing import Any, Optional, Awaitable, Callable, Union
 
 app_settings = get_settings()
+
 
 class LanguageModelManager:
     def __init__(self, language_model, embedding_function, qa_prompt, human_prefix, ai_prefix, data_path):
@@ -17,6 +20,7 @@ class LanguageModelManager:
         self.data_path = data_path
         self.conversation_chains = {}
         self.load_database()
+        
     
 
     @classmethod
@@ -59,7 +63,7 @@ class LanguageModelManager:
             db = FAISS.from_documents(documents=documents, embedding=embedding_function)
             db.save_local(folder_path=app_settings.faiss_index_folder)
 
-    def run_qa_chain(self, query):
+    async def run_qa_chain(self, query:str):
         if self.database is None:
             self.load_database()
         self.qa_chain = RetrievalQA.from_chain_type(
@@ -67,16 +71,19 @@ class LanguageModelManager:
             chain_type="stuff",
             retriever=self.database.as_retriever(
                 search_type="similarity_score_threshold",
-                search_kwargs={"score_threshold": 0.7, "k": 4},
+                search_kwargs={"score_threshold": 0.6, "k": 4},
             ),
             chain_type_kwargs={
                 "prompt": self.qa_prompt,
-               
+                # "memory": ConversationBufferWindowMemory(
+                #     human_prefix=self.human_prefix, ai_prefix=self.ai_prefix, k=4
+                # ),
             },
             return_source_documents=False,
             verbose=True,
-        )
-        yield self.qa_chain.run(query)
+            )
+        await self.qa_chain.acall(query)
+        
 
     def load_database(self):
         from langchain.vectorstores import FAISS
@@ -86,3 +93,6 @@ class LanguageModelManager:
             self.database = FAISS.load_local(faiss_index_folder, self.embedding_function)
         except ValueError:
             print(f"There is no database under the name {faiss_index_folder}, index some documents first")
+
+    
+    
