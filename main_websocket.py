@@ -17,7 +17,7 @@ openai_qa = OpenAIManager(prompt=openai_prompt_template)
 app = FastAPI()
 websocket_clients = []
 
-@app.websocket("/summarization/")
+@app.websocket("/ws")
 async def ask_for_summarization(websocket:WebSocket):
     await websocket.accept()
     websocket_clients.append(websocket)
@@ -28,7 +28,7 @@ async def ask_for_summarization(websocket:WebSocket):
                 await websocket.send_text(token)
     except WebSocketDisconnect:
         logger.info("websocket out")
-        websocket_clients.remove(websocket)
+        # websocket_clients.remove(websocket)
     
 
 if __name__ == "__main__":

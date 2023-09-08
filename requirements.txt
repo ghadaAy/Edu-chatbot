@@ -12,6 +12,7 @@ pypdf
 sentence-transformers
 pdf2image
 python-multipart
+websockets
 # #git+https://github.com/huggingface/transformers.git
 # accelerate
 # sentencepiece
