@@ -33,8 +33,6 @@ class OpenAIManager(LanguageModelManager):
             data_path="./data",
             
         )
-        
-        
 
     def load_openai_language_model(self):
         

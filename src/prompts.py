@@ -17,11 +17,9 @@ If the context is insufficient to generate a response, please consider using the
 [##Context##]{context}[/##Context##]"""
 
 
-summarize_prompt = """Please summarize the topic discussed in the following question using the provided context.
-
-If the context is insufficient for a response, use this template:
-"Unable to find relevant information based on the provided context. 
-[##Question##]{question}[/##Question##]
-
-[##Context##]{context}[/##Context##]
+summarize_prompt = """Provide a summary of the context as a response to the user's question.
+If the context is insufficient for a response, use this template: "Unable to find relevant information based on the provided context. 
+Return the summary without prephase "The provided context is a"
+Question:{question}
+Context:{context}
 """

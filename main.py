@@ -66,7 +66,7 @@ async def upload_file(file_: UploadFile = File(None)):
 @app.post("/summarize/")
 def request_summary(request: RequestLLM):
     return  StreamingResponse(
-        openai_qa.answer(request.message),
+        openai_summarizing.answer(request.message),
         status_code=200,
         media_type="text/event-stream",
     )
@@ -76,13 +76,13 @@ async def request_answer(request: RequestLLM):
      # Begin a task that runs in the background.
     
     return StreamingResponse(
-        openai_summarizing.answer(request.message),
+        openai_qa.answer(request.message),
         status_code=200,
         media_type="text/event-stream",
     )
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=8080, log_level="info", reload=True)
+    uvicorn.run("main:app", port=8080)
 
 
 # @app.post("/text/")

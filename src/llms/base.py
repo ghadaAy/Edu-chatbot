@@ -82,7 +82,7 @@ class LanguageModelManager:
             return_source_documents=False,
             verbose=True,
             )
-        await self.qa_chain.acall(query)
+        await self.qa_chain.arun(query)
         
 
     def load_database(self):
