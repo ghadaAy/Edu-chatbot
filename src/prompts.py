@@ -15,10 +15,12 @@ If the context is insufficient to generate a response, please consider using the
 [##Question##]{question}[/##Question##]
 
 [##Context##]{context}[/##Context##]"""
-summarize_prompt = """Please provide a concise summary of the subject mentioned in the following question based on the context. Please address your inquiry within the designated [##Question##] and [/##Question##] blocks, while providing relevant details in the [##Context##] and [/##Context##] blocks.
 
-If the context is insufficient to generate a response, please consider using the following response template:
-"Unfortunately, I'm unable to find relevant information based on the provided context. 
+
+summarize_prompt = """Please summarize the topic discussed in the following question using the provided context.
+
+If the context is insufficient for a response, use this template:
+"Unable to find relevant information based on the provided context. 
 [##Question##]{question}[/##Question##]
 
 [##Context##]{context}[/##Context##]
