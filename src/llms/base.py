@@ -107,12 +107,11 @@ class LanguageModelManager:
 
     async def run_qa_chain(self, query: str, user_id: str):
         self.callback_handler.on_llm_end()
-        if self.database is None:
-            self.load_database()
+        
         self.qa_chain.run(query, callbacks=[self.callback_handler])
 
         for token in self.callback_handler.tokens:
-            yield json.dumps({"user_id": user_id, "token": token})
+            yield token
         
         # for token in self.qa_chain.run(query):
         #     yield json.dumps({"user_id": user_id, "token": token})
