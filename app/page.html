@@ -4,34 +4,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Chat</title>
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="chat">
-        <div id="messages"></div>
-        <input type="text" id="messageInput" placeholder="Type a message...">
-        <button id="sendButton">Send</button>
+    <div class="chat-container">
+        <div class="chat-header">
+            Chatbot
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button">Send</button>
+        </div>
     </div>
 
     <script>
+        const chatMessages = document.getElementById("chat-messages");
+        const userInput = document.getElementById("user-input");
+        const sendButton = document.getElementById("send-button");
+
+        // Replace this with your WebSocket URL
         const socket = new WebSocket("ws://127.0.0.1:8080/ws");
-        const messages = document.getElementById("messages");
-        const messageInput = document.getElementById("messageInput");
-        const sendButton = document.getElementById("sendButton");
 
         socket.onmessage = (event) => {
-            const message = document.createElement("p");
-            message.textContent = event.data;
-            messages.appendChild(message);
+            const tokens = event.data.split(' '); // Split the incoming message into tokens
+            displayTokens("Chatbot", tokens);
         };
 
         sendButton.addEventListener("click", () => {
-            const message = messageInput.value;
-            if (message.trim() !== "") {
-                socket.send(message);
-                messageInput.value = "";
+            const userMessage = userInput.value;
+            if (userMessage.trim() !== "") {
+                displayMessage("You", userMessage);
+                socket.send(userMessage);
+                userInput.value = "";
             }
         });
+
+        function displayMessage(sender, message) {
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", sender === "You" ? "user" : "bot");
+            messageElement.innerHTML = message;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function displayTokens(sender, tokens) {
+            tokens.forEach((token) => {
+                displayMessage(sender, token);
+            });
+        }
     </script>
 </body>
 </html>

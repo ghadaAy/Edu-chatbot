@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
 class RequestLLM(BaseModel):
-    id_: str
+    user_id: str
     message: str 
-class User(BaseModel):
-    id_:str

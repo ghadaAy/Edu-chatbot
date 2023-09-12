@@ -13,7 +13,6 @@ from src.schema import RequestLLM
 from fastapi.responses import StreamingResponse
 import asyncio
 from src.prompts import summarize_prompt, openai_prompt_template
-from typing import Any, Optional, Awaitable, Callable, Union
 
 app_settings = get_settings()
 app = FastAPI()
@@ -22,8 +21,6 @@ app = FastAPI()
 embeddings = OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
 openai_summarizing = OpenAIManager(prompt=summarize_prompt)
 openai_qa = OpenAIManager(prompt=openai_prompt_template)
-
-
 
 
 @app.post("/index_image/")
@@ -65,24 +62,26 @@ async def upload_file(file_: UploadFile = File(None)):
 
 @app.post("/summarize/")
 def request_summary(request: RequestLLM):
-    return  StreamingResponse(
-        openai_summarizing.answer(request.message),
+    return StreamingResponse(
+        openai_summarizing.run_qa_chain(request.message, request.user_id),
         status_code=200,
-        media_type="text/event-stream",
+        media_type="application/x-ndjson",
     )
+
 
 @app.post("/question_answering/")
 async def request_answer(request: RequestLLM):
-     # Begin a task that runs in the background.
-    
+    # Begin a task that runs in the background.
+
     return StreamingResponse(
-        openai_qa.answer(request.message),
+        openai_qa.run_qa_chain(request.message, request.user_id),
         status_code=200,
-        media_type="text/event-stream",
+        media_type="application/x-ndjson",
     )
 
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=8080)
+    uvicorn.run("main_endpoints:app", port=8000)
 
 
 # @app.post("/text/")

@@ -19,13 +19,16 @@ websocket_clients = []
 
 @app.websocket("/ws")
 async def ask_for_summarization(websocket:WebSocket):
-    await websocket.accept()
-    websocket_clients.append(websocket)
+    
     try:
+        await websocket.accept()
+        websocket_clients.append(websocket)
         while True:
+            
             message = await websocket.receive_text()
             async for token in openai_summarizing.answer(message):
                 await websocket.send_text(token)
+                print(token)
     except WebSocketDisconnect:
         logger.info("websocket out")
         # websocket_clients.remove(websocket)
