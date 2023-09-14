@@ -5,7 +5,7 @@ from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from settings import get_settings
 from src.llms.base import LanguageModelManager
-from src import prompts as llms_prompts
+from src import prompt_template as llms_prompts
 from typing import Any, Optional, Awaitable, Callable, Union
 import asyncio
 
@@ -13,11 +13,11 @@ app_settings = get_settings()
 
 
 class OpenAIManager(LanguageModelManager):
-    def __init__(self, prompt: str):
+    def __init__(self, prompt_template: str):
         super().__init__(
             language_model=self.load_openai_language_model(),
             embedding_function=self.load_openai_embeddings(),
-            qa_prompt=self.create_qa_prompt(prompt),
+            prompt_template=prompt_template,
             human_prefix="Human",
             ai_prefix="AI",
             data_path="./data",
@@ -34,9 +34,3 @@ class OpenAIManager(LanguageModelManager):
 
     def load_openai_embeddings(self):
         return OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
-
-    def create_qa_prompt(self, prompt: str):
-        return PromptTemplate(
-            template=prompt,
-            input_variables=["context", "question"],
-        )

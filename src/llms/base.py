@@ -1,6 +1,7 @@
 import os
+from re import template
 from langchain.vectorstores import FAISS
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQA, LLMChain
 from langchain.memory import ConversationBufferWindowMemory
 from src.loader.process_file import ProcessFile
 from settings import get_settings
@@ -11,6 +12,9 @@ from typing import Any, Optional, Awaitable, Callable, Union
 import asyncio
 import json
 from src.callbacks.handler import ChainCallbackHandler
+from langchain.prompts import PromptTemplate
+from langchain.memory import ConversationBufferMemory
+
 
 app_settings = get_settings()
 
@@ -31,36 +35,25 @@ class LanguageModelManager:
         self,
         language_model,
         embedding_function,
-        qa_prompt,
         human_prefix,
         ai_prefix,
         data_path,
+        prompt_template,
     ):
         self.language_model = language_model
         self.embedding_function = embedding_function
-        self.qa_prompt = qa_prompt
         self.human_prefix = human_prefix
         self.ai_prefix = ai_prefix
         self.data_path = data_path
-        self.conversation_chains = {}
         self.load_database()
+        self.memory = ConversationBufferMemory(memory_key="chat_history")
         self.callback_handler = ChainCallbackHandler()
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.language_model,
-            chain_type="stuff",
-            retriever=self.database.as_retriever(
-                search_type="similarity_score_threshold",
-                search_kwargs={"score_threshold": 0.6, "k": 4},
-            ),
-            
-            chain_type_kwargs={
-                "prompt": self.qa_prompt,
-                # "memory": ConversationBufferWindowMemory(
-                #     human_prefix=self.human_prefix, ai_prefix=self.ai_prefix, k=4
-                # ),
-            },
-            return_source_documents=False,
-            verbose=True,
+        self.prompt_template=prompt_template
+
+    def create_qa_prompt(self, prompt_template: str):
+        return PromptTemplate(
+            template=prompt_template,
+            input_variables=["context", "question"],
         )
 
     @classmethod
@@ -104,15 +97,28 @@ class LanguageModelManager:
         except:
             db = FAISS.from_documents(documents=documents, embedding=embedding_function)
             db.save_local(folder_path=app_settings.faiss_index_folder)
-
+    def get_doc(self,query):
+        self.database.similarity_search_with_score(query)
+        
     async def run_qa_chain(self, query: str, user_id: str):
         self.callback_handler.on_llm_end()
-        
-        self.qa_chain.run(query, callbacks=[self.callback_handler])
+
+        docs_and_scores = self.database.similarity_search_with_score(query)
+        str_docs = "\n".join([doc[0].page_content for doc in docs_and_scores])
+
+        qa_prompt = self.create_qa_prompt(prompt_template=self.prompt_template)
+        llm_chain = LLMChain(
+            llm=self.language_model,
+            callbacks=[self.callback_handler],
+            prompt=qa_prompt,
+            # memory=self.memory,
+            verbose=True
+        )
+        llm_chain.predict(callbacks=[self.callback_handler], context=str_docs, question=query)
 
         for token in self.callback_handler.tokens:
             yield token
-        
+
         # for token in self.qa_chain.run(query):
         #     yield json.dumps({"user_id": user_id, "token": token})
 
