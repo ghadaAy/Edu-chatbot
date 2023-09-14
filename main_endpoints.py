@@ -12,15 +12,15 @@ from fastapi.responses import FileResponse
 from src.schema import RequestLLM
 from fastapi.responses import StreamingResponse
 import asyncio
-from src.prompts import summarize_prompt, openai_prompt_template
+from src.prompt_template import Templates
 
 app_settings = get_settings()
 app = FastAPI()
 
 
 embeddings = OpenAIEmbeddings(openai_api_key=app_settings.OPENAI_API_KEY)  # type: ignore
-openai_summarizing = OpenAIManager(prompt=summarize_prompt)
-openai_qa = OpenAIManager(prompt=openai_prompt_template)
+openai_summarizing = OpenAIManager(prompt_template=Templates.summarize_prompt)
+openai_qa = OpenAIManager(prompt_template=Templates.openai_prompt_template)
 
 
 @app.post("/index_image/")

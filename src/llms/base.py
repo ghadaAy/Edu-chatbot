@@ -1,35 +1,15 @@
 import os
-from re import template
 from langchain.vectorstores import FAISS
-from langchain.chains import RetrievalQA, LLMChain
+from langchain.chains import LLMChain
 from langchain.memory import ConversationBufferWindowMemory
 from src.loader.process_file import ProcessFile
 from settings import get_settings
 import asyncio
-from typing import Any, Optional, Awaitable, Callable, Union
-from langchain.callbacks import AsyncIteratorCallbackHandler
-from typing import Any, Optional, Awaitable, Callable, Union
-import asyncio
-import json
-from src.callbacks.handler import ChainCallbackHandler
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferMemory
-
+from src.callbacks.handler import EnqueueCallbackHandler
 
 app_settings = get_settings()
-
-
-async def wrap_done(fn: Awaitable, event: asyncio.Event):
-    try:
-        await fn
-    except Exception as e:
-        # TODO: handle exception
-        print(f"Caught exception: {e}")
-    finally:
-        # Signal the aiter to stop.
-        event.set()
-
-
 class LanguageModelManager:
     def __init__(
         self,
@@ -47,8 +27,12 @@ class LanguageModelManager:
         self.data_path = data_path
         self.load_database()
         self.memory = ConversationBufferMemory(memory_key="chat_history")
-        self.callback_handler = ChainCallbackHandler()
-        self.prompt_template=prompt_template
+
+        self.prompt_template = prompt_template
+        self.queue = asyncio.Queue()
+        self.lock = asyncio.Lock()
+
+        self.callback_handler = EnqueueCallbackHandler(self.queue)
 
     def create_qa_prompt(self, prompt_template: str):
         return PromptTemplate(
@@ -97,31 +81,35 @@ class LanguageModelManager:
         except:
             db = FAISS.from_documents(documents=documents, embedding=embedding_function)
             db.save_local(folder_path=app_settings.faiss_index_folder)
-    def get_doc(self,query):
-        self.database.similarity_search_with_score(query)
-        
-    async def run_qa_chain(self, query: str, user_id: str):
-        self.callback_handler.on_llm_end()
 
+    async def run_qa_chain(self, query: str, user_id: str):
         docs_and_scores = self.database.similarity_search_with_score(query)
         str_docs = "\n".join([doc[0].page_content for doc in docs_and_scores])
 
         qa_prompt = self.create_qa_prompt(prompt_template=self.prompt_template)
-        llm_chain = LLMChain(
+        chain = LLMChain(
             llm=self.language_model,
             callbacks=[self.callback_handler],
             prompt=qa_prompt,
-            # memory=self.memory,
-            verbose=True
+            # =memory=self.memory,
+            verbose=True,
         )
-        llm_chain.predict(callbacks=[self.callback_handler], context=str_docs, question=query)
 
-        for token in self.callback_handler.tokens:
-            yield token
+        await chain.arun(
+            callbacks=[self.callback_handler], context=str_docs, question=query
+        )
 
-        # for token in self.qa_chain.run(query):
-        #     yield json.dumps({"user_id": user_id, "token": token})
+        
+        while True:
+            async with self.lock:
+                response = await self.queue.get()
+                if response is None:
+                    break
+                yield response
+            
+            self.queue.task_done()
 
+       
     def load_database(self):
         from langchain.vectorstores import FAISS
 
