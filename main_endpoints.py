@@ -1,4 +1,3 @@
-import json
 from settings import get_settings
 from src.llms.openai import OpenAIManager
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -11,7 +10,6 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
 from src.schema import RequestLLM
 from fastapi.responses import StreamingResponse
-import asyncio
 from src.prompt_template import Templates
 
 app_settings = get_settings()
@@ -82,36 +80,3 @@ async def request_answer(request: RequestLLM):
 
 if __name__ == "__main__":
     uvicorn.run("main_endpoints:app", port=8000)
-
-
-# @app.post("/text/")
-# async def process_text_api(text: str = Form(...)):
-#     processed_text = process_text(text)
-#     return {"processed_text": processed_text}
-
-# async def process_image_api(file: UploadFile = File(...)):
-#     # Open and process the uploaded image
-#     image = Image.open(BytesIO(file.file.read()))
-#     processed_image = process_image(image)
-
-#     # Save the processed image to a temporary file
-#     temp_image_path = "/tmp/processed_image.jpg"
-#     processed_image.save(temp_image_path)
-
-#     # Return the processed image as a response
-#     return FileResponse(temp_image_path, media_type="image/jpeg")
-
-# @app.post("/pdf/")
-# async def process_pdf_api(file: UploadFile = File(...)):
-#     # Convert PDF to images and process the first page
-#     images = convert_from_path(BytesIO(file.file.read()))
-#     if images:
-#         pdf_image = images[0]
-#         processed_pdf_image = process_pdf(pdf_image)
-
-#         # Save the processed PDF image to a temporary file
-#         temp_pdf_image_path = "/tmp/processed_pdf_image.jpg"
-#         processed_pdf_image.save(temp_pdf_image_path)
-
-#         # Return the processed PDF image as a response
-#         return FileResponse(temp_pdf_image_path, media_type="image/jpeg")
