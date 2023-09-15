@@ -61,7 +61,7 @@ async def upload_file(file_: UploadFile = File(None)):
 @app.post("/summarize/")
 async def request_summary(request: RequestLLM):
     return StreamingResponse(
-        openai_summarizing.run_qa_chain(request.message, request.user_id),
+        openai_summarizing.run_qa_chain(request.message, request.message_id),
         status_code=200,
         media_type="application/x-ndjson",
     )
@@ -72,7 +72,7 @@ async def request_answer(request: RequestLLM):
     # Begin a task that runs in the background.
 
     return StreamingResponse(
-        openai_qa.run_qa_chain(request.message, request.user_id),
+        openai_qa.run_qa_chain(request.message, request.message_id),
         status_code=200,
         media_type="application/x-ndjson",
     )

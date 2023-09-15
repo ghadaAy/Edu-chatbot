@@ -29,10 +29,10 @@ class LanguageModelManager:
         self.memory = ConversationBufferMemory(memory_key="chat_history")
 
         self.prompt_template = prompt_template
-        self.queue = asyncio.Queue()
-        self.lock = asyncio.Lock()
+        self.queues = {}
+        
 
-        self.callback_handler = EnqueueCallbackHandler(self.queue)
+        
 
     def create_qa_prompt(self, prompt_template: str):
         return PromptTemplate(
@@ -82,7 +82,11 @@ class LanguageModelManager:
             db = FAISS.from_documents(documents=documents, embedding=embedding_function)
             db.save_local(folder_path=app_settings.faiss_index_folder)
 
-    async def run_qa_chain(self, query: str, user_id: str):
+    async def run_qa_chain(self, query: str, message_id:str):
+        if message_id not in self.queues:
+            self.queues[message_id] = asyncio.Queue()
+        self.callback_handler = EnqueueCallbackHandler(self.queues, message_id=message_id)
+
         docs_and_scores = self.database.similarity_search_with_score(query)
         str_docs = "\n".join([doc[0].page_content for doc in docs_and_scores])
 
@@ -99,15 +103,13 @@ class LanguageModelManager:
             callbacks=[self.callback_handler], context=str_docs, question=query
         )
 
-        
         while True:
-            async with self.lock:
-                response = await self.queue.get()
-                if response is None:
-                    break
-                yield response
+            response = await self.queues[message_id].get()
+            if response is None:
+                break
+            yield response
             
-            self.queue.task_done()
+            self.queues[message_id].task_done()
 
        
     def load_database(self):
